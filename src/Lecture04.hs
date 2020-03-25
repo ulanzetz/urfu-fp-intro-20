@@ -2,6 +2,7 @@
 
 module Lecture04 where
 
+import Data.List
 
 {-
   04: Алгебраические типы данных (ADTs)
@@ -329,9 +330,22 @@ newtype AdoptedAnimal = AdoptedAnimal
     - Month
     - Year
 -}
-showDate :: Int -> Int -> Int -> String
+newtype Day = Day Int deriving (Eq, Show)
+newtype Month = Month Int deriving (Eq, Show)
+newtype Year = Year Int deriving (Eq, Show)
+
+data Date = Date {
+  day :: Day,
+  month :: Month,
+  year :: Year
+}
+
+instance Show Date where
+  show date = "Day " ++ show (day date) ++ " of " ++ show (month date) ++ " month, year " ++ show (year date)
+
+showDate :: Day -> Month -> Year -> String
 showDate day month year =
-  "Day " ++ show day ++ " of " ++ show month ++ " month, year " ++ show year
+  show Date { day = day, month = month, year = year }
 
 -- </Задачи для самостоятельного решения>
 
@@ -370,7 +384,9 @@ showDate day month year =
   - uncons [1,2,3] ~> (Just 1, [2, 3])
 -}
 uncons :: [a] -> (Maybe a, [a])
-uncons l = error "not implemented"
+uncons = \case
+  h : t -> (Just h, t)
+  []    -> (Nothing, [])
 
 {-
   zipMaybe возвращает пару значений, если оба значения не Nothing:
@@ -380,7 +396,8 @@ uncons l = error "not implemented"
   - zipMaybe (Just "hey") (Just 2) ~> Just ("hey", 2)
 -}
 zipMaybe :: Maybe a -> Maybe b -> Maybe (a, b)
-zipMaybe a b = error "not implemented"
+zipMaybe (Just a) (Just b) = Just(a, b)
+zipMaybe _ _               = Nothing
 
 -- </Задачи для самостоятельного решения>
 
@@ -415,7 +432,22 @@ zipMaybe a b = error "not implemented"
       - сообщать "Can't adopt lions :("
 -}
 adopt :: AnimalWithType -> Either String AdoptedAnimal
-adopt = error "not implemented"
+adopt animal = case animal of
+  AnimalWithType age name Cat ->
+    if age < 5 && not (isPrefixOf "D" name) then
+      Right (AdoptedAnimal animal)
+    else
+      Left "Can't adopt cat"
+  AnimalWithType age _ Dog    ->
+    if age > 1 then
+      Right (AdoptedAnimal animal)
+    else
+      Left "Can't adopt dog"
+  AnimalWithType _ name Duck  ->
+    case name of
+      "Daisy" -> Right (AdoptedAnimal animal)
+      _       -> Left "Quack"
+  AnimalWithType _ _ Lion     -> Left "Can't adopt lions :("
 
 -- </Задачи для самостоятельного решения>
 
@@ -469,21 +501,21 @@ adopt = error "not implemented"
 
   Посчитайте cardinality для:
 
-  1. |Bool| = 
+  1. |Bool| = 2
 
-  2. |(Bool, Bool)| =
+  2. |(Bool, Bool)| = 4
 
     data (a, b) = (a, b)
 
-  3. |Maybe a| =
+  3. |Maybe a| = |a| + 1
 
     data Maybe a = Nothing | Just a
 
-  4. |Bool -> Bool| =
+  4. |Bool -> Bool| = 4
 
-  5. |Bool -> (Bool, Bool)| =
+  5. |Bool -> (Bool, Bool)| = 16
 
-  6. |Bool -> (Bool, a)| =
+  6. |Bool -> (Bool, a)| = (|a| * 2) ^ 2
 
 -}
 
@@ -494,7 +526,7 @@ adopt = error "not implemented"
   и вспомогательные функции. Тесты написаны так, что вспомогательные функции
   зависят друг друга. 
 -}
-data Tree a
+data Tree a = Leaf | Node a (Tree a) (Tree a)
   {-
     Определите конструкторы для бинарного дерева:
       - лист
@@ -504,11 +536,13 @@ data Tree a
 
 -- Возвращает пустое дерево
 empty :: Tree a
-empty = error "not implemented"
+empty = Leaf
 
 -- Возвращает True, если дерево - это лист
 isLeaf :: Tree a -> Bool
-isLeaf t = error "not implemented"
+isLeaf = \case
+  Leaf -> True
+  _    -> False
 
 -- Возвращает True, если дерево - не лист
 isNode :: Tree a -> Bool
@@ -516,15 +550,21 @@ isNode = not . isLeaf
 
 -- Если дерево это нода, то возвращает текущее значение ноды
 getValue :: Tree a -> Maybe a
-getValue t = error "not implemented"
+getValue = \case
+  Node a _ _ -> Just a
+  _          -> Nothing
 
 -- Если дерево это нода, то возвращает левое поддерево
 getLeft :: Tree a -> Maybe (Tree a)
-getLeft t = error "not implemented"
+getLeft = \case
+  Node _ l _ -> Just l
+  _          -> Nothing
 
 -- Если дерево это нода, то возвращает правое поддерево
 getRight :: Tree a -> Maybe (Tree a)
-getRight t = error "not implemented"
+getRight = \case
+  Node _ _ r -> Just r
+  _          -> Nothing
 
 {-
   Вставка значения в дерево:
@@ -541,7 +581,12 @@ getRight t = error "not implemented"
    три значения: GT, EQ, LT. Попробуйте поиграться в repl.
 -} 
 insert :: Ord a => a -> Tree a -> Tree a
-insert v t = error "not implemented"
+insert v t = case t of
+  Leaf -> Node v Leaf Leaf
+  Node a l r -> case compare v a of
+    GT -> Node a l (Lecture04.insert v r)
+    LT -> Node a (Lecture04.insert v l) r
+    EQ -> Node a l r
 
 {-
   Проверка наличия значения в дереве:
@@ -553,6 +598,11 @@ insert v t = error "not implemented"
     - isElem 4 $ insert 1 $ insert 3 $ insert 2 empty ~> False
 -}
 isElem :: Ord a => a -> Tree a -> Bool
-isElem v tree = error "not implemented"
+isElem v tree = case tree of
+  Leaf -> False
+  Node a l r -> case compare v a of
+    GT -> isElem v r
+    LT -> isElem v l
+    EQ -> True
 
 -- </Задачи для самостоятельного решения>
