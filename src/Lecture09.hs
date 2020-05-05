@@ -98,7 +98,7 @@ data TodoEdit = TodoEdit
   , deadline :: Deadline
   } deriving (Eq, Show)
 
-createTodoList :: FilePath -> TodoList
+createTodoList :: FilePath -> IO TodoList
 createTodoList rootFolder = error "not implemented"
 
 addTodo :: TodoList -> Title -> Content -> Deadline -> IO Id
